@@ -1,3 +1,17 @@
+setup for QML people: 
+python3 -m venv qugen_env
+source qugen_env/bin/activate
+pip install .
+pip install jupyter
+
+To see results: 
+cd QML
+source qugen_env/bin/activate
+jupyter notebook
+
+
+
+
 [![arXiv](https://img.shields.io/badge/arXiv-2603.00233-fb595a.svg)](https://arxiv.org/abs/2603.00233)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18791062.svg)](https://doi.org/10.5281/zenodo.18791062)
 
