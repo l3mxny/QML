@@ -1,15 +1,15 @@
 setup for QML people: 
-1.git clone https://github.com/l3mxny/QML.git
-2.cd QML
-3.python3 -m venv qugen_env
-4.source qugen_env/bin/activate
-5.pip install .
-6.pip install jupyter
+1. git clone https://github.com/l3mxny/QML.git
+2. cd QML
+3. python3 -m venv qugen_env
+4. source qugen_env/bin/activate
+5. pip install .
+6. pip install jupyter
 
 To see results: 
-1.cd QML
-2.source qugen_env/bin/activate
-3.jupyter notebook
+1. cd QML
+2. source qugen_env/bin/activate
+3. jupyter notebook
 
 
 
