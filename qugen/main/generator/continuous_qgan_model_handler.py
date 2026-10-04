@@ -550,8 +550,8 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         D.apply = jax.jit(D.apply)
         v_qnode = jax.vmap(self.generator, in_axes=(0, None))
 
-        def cost_fn_discriminator(z, X, generator_weights, discriminator_weights, alpha=None):
-            G_sample = self.decoder(self.standardize_pennylane_output(v_qnode(z, generator_weights)))
+        def cost_fn_discriminator(z, X, generator_weights, discriminator_weights, alpha=None, rng_key=None):
+            G_sample = self.decoder(self.standardize_pennylane_output(v_qnode(z, generator_weights)), rng_key=rng_key)
             D_fake = D.apply(discriminator_weights, G_sample)
             D_real = D.apply(discriminator_weights, X)
             if not is_critic:  # log transform if Vanilla GAN, not for Wasserstein GAN
@@ -576,8 +576,8 @@ class ContinuousQGANModelHandler(BaseModelHandler):
             return D_loss
 
 
-        def cost_fn_generator(z, generator_weights, discriminator_weights):
-            G_sample = self.decoder(self.standardize_pennylane_output(v_qnode(z, generator_weights)))
+        def cost_fn_generator(z, generator_weights, discriminator_weights, rng_key=None):
+            G_sample = self.decoder(self.standardize_pennylane_output(v_qnode(z, generator_weights)), rng_key=rng_key)
             D_fake = D.apply(discriminator_weights, G_sample)
             if not is_critic:  # log transform if Vanilla GAN, not for Wasserstein GAN
                 D_fake = jnp.log(D_fake + epsilon)
@@ -645,8 +645,11 @@ class ContinuousQGANModelHandler(BaseModelHandler):
                 if self.batch_size != len(train_dataset):
                     self.random_key, subkey = jax.random.split(self.random_key)
 
+                # Fresh key per step so simulated shot noise (if enabled) varies across training
+                # iterations instead of being frozen at a fixed default seed.
+                self.random_key, subkey_shots = jax.random.split(self.random_key)
                 cost_discriminator, grad = jax.value_and_grad(
-                    lambda w: cost_fn_discriminator(z, X, self.generator_weights, w, alpha=alpha)
+                    lambda w: cost_fn_discriminator(z, X, self.generator_weights, w, alpha=alpha, rng_key=subkey_shots)
                 )(self.discriminator_weights)
 
                 updates, optimizer_state_d = optimizer_discriminator.update(
@@ -657,8 +660,9 @@ class ContinuousQGANModelHandler(BaseModelHandler):
                     self.discriminator_weights, updates
                 )
 
+            self.random_key, subkey_shots = jax.random.split(self.random_key)
             cost_generator, grad = jax.value_and_grad(
-                lambda w: cost_fn_generator(z, w, self.discriminator_weights)
+                lambda w: cost_fn_generator(z, w, self.discriminator_weights, rng_key=subkey_shots)
             )(self.generator_weights)
             G_grad_mag = np.linalg.norm(np.array(grad)).mean()
 
@@ -758,7 +762,10 @@ class ContinuousQGANModelHandler(BaseModelHandler):
             noise = (noise, z_init)
 
         v_qnode = jax.vmap(lambda inpt: self.generator(inpt, self.generator_weights))
-        samples_transformed = self.decoder(measurement_outputs := self.standardize_pennylane_output(v_qnode(noise)))
+        self.random_key, subkey_shots = jax.random.split(self.random_key)
+        samples_transformed = self.decoder(
+            measurement_outputs := self.standardize_pennylane_output(v_qnode(noise)), rng_key=subkey_shots
+        )
         samples_transformed = np.asarray(samples_transformed)
 
         return_info = dict.fromkeys([k[k.find('_') + 1:] for k, v in kwargs.items() if k.startswith("return") and v])
