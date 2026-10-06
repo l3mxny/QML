@@ -691,7 +691,8 @@ class ContinuousQGANModelHandler(BaseModelHandler):
             logged_metrics['grad_mag_discriminator'].append(D_grad_mag)
             it_list.append(it)
 
-            if it % 100 == 0 or it == n_epochs - 1:  # Store every 100 epochs and in the final epoch
+            # Store every 100 epochs and in the final epoch
+            if self.save_artifacts and (it % 100 == 0 or it == n_epochs - 1):
                 df_eval_summary = pd.DataFrame(
                     {"iteration": it_list} | {k: np.array(v).astype(float) for k, v in logged_metrics.items()}
                 )
