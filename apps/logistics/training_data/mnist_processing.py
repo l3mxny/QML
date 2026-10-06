@@ -2,13 +2,29 @@ import cv2
 import numpy as np
 from fire import Fire
 
+# OpenCV interpolation schemes for downscaling. Lanczos is the default used for all experiments of the paper. For
+# strong downscaling (e.g., 28x28 -> 4x4), OpenCV recommends area interpolation, which averages all source pixels
+# covered by a target pixel instead of sampling a fixed 8x8 neighborhood.
+INTERPOLATIONS = {
+    "lanczos": cv2.INTER_LANCZOS4,
+    "area": cv2.INTER_AREA,
+    "linear": cv2.INTER_LINEAR,
+    "cubic": cv2.INTER_CUBIC,
+    "nearest": cv2.INTER_NEAREST,
+}
+DEFAULT_INTERPOLATION = "lanczos"
+
 
 def main(n_data_samples=-1,
          digit=tuple(range(10)),
          img_size=28,
          flatten_imgs=True,
          normalize_imgs=False,
-         n_channels=1):
+         n_channels=1,
+         interpolation=DEFAULT_INTERPOLATION):
+    if interpolation not in INTERPOLATIONS:
+        raise ValueError(f"Unknown interpolation {interpolation}. Valid options are {list(INTERPOLATIONS.keys())}")
+
     # Load data:
     # Download raw data (train_images.npy and train_labels.npy) here: https://github.com/sebastian-lapuschkin/lrp_toolbox/tree/master/data/MNIST
     # Save them as mnist_raw.npy and mnist_labels_raw.npy, respectively
@@ -41,7 +57,7 @@ def main(n_data_samples=-1,
     # Downscale images to desired size (with proper interpolation handled by opencv):
     imgs_scaled = np.empty((n_data_samples, img_size, img_size))
     for i, img in enumerate(mnist):
-        imgs_scaled[i] = cv2.resize(img, dsize=(img_size, img_size), interpolation=cv2.INTER_LANCZOS4)
+        imgs_scaled[i] = cv2.resize(img, dsize=(img_size, img_size), interpolation=INTERPOLATIONS[interpolation])
 
     # Duplicate channels if requested:
     if n_channels > 1:
@@ -65,7 +81,8 @@ def main(n_data_samples=-1,
     # Store final images:
     digits_str = '_'.join(map(str, sorted(digit)))
     save_path = (("" if n_channels == 1 else f"{n_channels}ch_") +
-                 f"mnist_{digits_str}_{img_size}x{img_size}_N_{n_data_samples}")
+                 f"mnist_{digits_str}_{img_size}x{img_size}_N_{n_data_samples}" +
+                 ("" if interpolation == DEFAULT_INTERPOLATION else f"_{interpolation}"))
     np.save(save_path, imgs_scaled)
 
 
