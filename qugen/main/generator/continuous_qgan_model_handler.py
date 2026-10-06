@@ -538,7 +538,12 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         X_train = CustomDataset(train_dataset.astype("float32"))
         print(f"{self.gan_method=}")
         is_critic = self.gan_method.startswith("WGAN")  # Wasserstein GAN setting uses a critic instead of discriminator
-        D = self.discriminator_cls(is_critic=is_critic, n_channels=self.n_channels)
+        discriminator_kwargs = dict(is_critic=is_critic)
+        # Only some discriminators (e.g., the convolutional one) support multiple channels. Grayscale images work with
+        # all discriminators, while a multichannel request to a discriminator without channel support raises an error.
+        if self.n_channels != 1 or "n_channels" in self.discriminator_cls.__dataclass_fields__:
+            discriminator_kwargs["n_channels"] = self.n_channels
+        D = self.discriminator_cls(**discriminator_kwargs)
         epsilon = 1e-10
         if len(gan_method_split := self.gan_method.split("_")) > 1:
             gradient_penalty_coeff = float(gan_method_split[-1])
