@@ -374,8 +374,7 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         if warm_start_model_name is None:
             raise ValueError("No model found for the warm start with the lower depth circuit",
                              meta_data_warm_start["circuit_depth"])
-        last_epoch = max(int(s.split("iteration=")[1].split(".pickle")[0]) for s
-                         in glob("experiments/" + warm_start_model_name + "/parameters_training_iteration=*.pickle"))
+        last_epoch = self.last_checkpoint_iteration(warm_start_model_name)
         self.reload(model_name=warm_start_model_name, epoch=last_epoch)
 
         self.metadata['model_name'], self.model_name = orig_model_name, orig_model_name
@@ -397,6 +396,14 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         print(f"{self.circuit_depth=}")
 
         #assert self.generator_weights.shape[0] == self.circuit_depth, f"{self.generator_weights.shape[0] }{ self.circuit_depth}"
+
+    @staticmethod
+    def last_checkpoint_iteration(model_name: str) -> int:
+        """Training iteration of the most recent parameter checkpoint stored for the model."""
+        checkpoints = glob("experiments/" + model_name + "/parameters_training_iteration=*.pickle")
+        if len(checkpoints) == 0:
+            raise FileNotFoundError(f"No parameter checkpoints found for model {model_name} in experiments/")
+        return max(int(s.split("iteration=")[1].split(".pickle")[0]) for s in checkpoints)
 
     def reload(self, model_name: str, epoch: int) -> BaseModelHandler:
         """Reload the model from the artifacts including the parameters for the generator and the discriminator,
