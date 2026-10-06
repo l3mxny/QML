@@ -276,6 +276,39 @@ def pca_images(images, n_components, std_factor=1., pick_closest=True, return_ex
     return varied_imgs
 
 
+def save_image_grid(images, save_path, n_cols=10, titles=None, suptitle=None, vmin=0., vmax=1.):
+    """
+    Save a grid of square grayscale images, e.g., generated samples.
+
+    Args:
+        images (np.ndarray): Flattened images of shape (n_images, n_pixels) or 2D images (n_images, H, W).
+        save_path (str): Path of the image file to store the figure.
+        n_cols (int, optional): Number of images per row. Defaults to 10.
+        titles (list[str], optional): Title per image (e.g., predicted digit). Defaults to None.
+        suptitle (str, optional): Title of the whole figure. Defaults to None.
+        vmin, vmax (float, optional): Pixel value range mapped to black and white, respectively. Defaults to [0, 1].
+    """
+    images = np.asarray(images)
+    n_images = len(images)
+    img_size = round(np.sqrt(images[0].size))
+    images = images.reshape(n_images, img_size, img_size)
+
+    n_cols = min(n_cols, n_images)
+    n_rows = int(np.ceil(n_images / n_cols))
+    fig, axs = plt.subplots(nrows=n_rows, ncols=n_cols, squeeze=False, figsize=(n_cols, n_rows + 0.5))
+    for i, ax in enumerate(axs.flat):
+        _ax_remove_ticks(ax)
+        if i < n_images:
+            ax.imshow(images[i], cmap="gray", vmin=vmin, vmax=vmax)
+            if titles is not None:
+                ax.set_title(str(titles[i]), fontsize=8)
+    if suptitle is not None:
+        fig.suptitle(suptitle)
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=150)
+    plt.close(fig)
+
+
 if __name__ == '__main__':
     fire.Fire(plot_images_training_progression)
     plt.savefig("fig.pdf")
