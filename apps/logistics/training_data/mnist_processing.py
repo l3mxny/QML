@@ -21,7 +21,8 @@ def main(n_data_samples=-1,
          flatten_imgs=True,
          normalize_imgs=False,
          n_channels=1,
-         interpolation=DEFAULT_INTERPOLATION):
+         interpolation=DEFAULT_INTERPOLATION,
+         save_labels=False):
     if interpolation not in INTERPOLATIONS:
         raise ValueError(f"Unknown interpolation {interpolation}. Valid options are {list(INTERPOLATIONS.keys())}")
 
@@ -45,13 +46,16 @@ def main(n_data_samples=-1,
     if isinstance(digit, int):  # single digit, otherwise, iterable with multiple desired digits
         digit = [digit]
     digit = np.asarray(digit)
-    mnist = mnist[np.vectorize(lambda x: x in digit)(mnist_labels)]
+    digit_mask = np.vectorize(lambda x: x in digit)(mnist_labels)
+    mnist = mnist[digit_mask]
+    mnist_labels = mnist_labels[digit_mask]
     print(f"{len(mnist)} samples with digits: {digit.squeeze()}")
 
     # Keep only specified number of samples:
     if n_data_samples is None or n_data_samples < 0:
         n_data_samples = len(mnist)
     mnist = mnist[:n_data_samples]
+    mnist_labels = mnist_labels[:n_data_samples]
     print(len(mnist))
 
     # Downscale images to desired size (with proper interpolation handled by opencv):
@@ -84,6 +88,10 @@ def main(n_data_samples=-1,
                  f"mnist_{digits_str}_{img_size}x{img_size}_N_{n_data_samples}" +
                  ("" if interpolation == DEFAULT_INTERPOLATION else f"_{interpolation}"))
     np.save(save_path, imgs_scaled)
+
+    # Store the digit labels of the final images if desired (e.g., for classifier-based evaluation metrics):
+    if save_labels:
+        np.save(save_path + "_labels", mnist_labels.astype(int))
 
 
 if __name__ == '__main__':
