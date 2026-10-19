@@ -8,6 +8,7 @@ import flax.linen as nn_jax
 class Discriminator(nn_jax.Module):
 
     is_critic: bool = False
+    n_channels: int = 1  # unused: this discriminator operates on the flattened input regardless of channel count
     hidden_layer_dis: int = 64
 
     @nn_jax.compact
