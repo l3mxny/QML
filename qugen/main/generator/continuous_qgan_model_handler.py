@@ -374,8 +374,7 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         if warm_start_model_name is None:
             raise ValueError("No model found for the warm start with the lower depth circuit",
                              meta_data_warm_start["circuit_depth"])
-        last_epoch = max(int(s.split("iteration=")[1].split(".pickle")[0]) for s
-                         in glob("experiments/" + warm_start_model_name + "/parameters_training_iteration=*.pickle"))
+        last_epoch = self.last_checkpoint_iteration(warm_start_model_name)
         self.reload(model_name=warm_start_model_name, epoch=last_epoch)
 
         self.metadata['model_name'], self.model_name = orig_model_name, orig_model_name
@@ -397,6 +396,14 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         print(f"{self.circuit_depth=}")
 
         #assert self.generator_weights.shape[0] == self.circuit_depth, f"{self.generator_weights.shape[0] }{ self.circuit_depth}"
+
+    @staticmethod
+    def last_checkpoint_iteration(model_name: str) -> int:
+        """Training iteration of the most recent parameter checkpoint stored for the model."""
+        checkpoints = glob("experiments/" + model_name + "/parameters_training_iteration=*.pickle")
+        if len(checkpoints) == 0:
+            raise FileNotFoundError(f"No parameter checkpoints found for model {model_name} in experiments/")
+        return max(int(s.split("iteration=")[1].split(".pickle")[0]) for s in checkpoints)
 
     def reload(self, model_name: str, epoch: int) -> BaseModelHandler:
         """Reload the model from the artifacts including the parameters for the generator and the discriminator,
@@ -538,7 +545,12 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         X_train = CustomDataset(train_dataset.astype("float32"))
         print(f"{self.gan_method=}")
         is_critic = self.gan_method.startswith("WGAN")  # Wasserstein GAN setting uses a critic instead of discriminator
-        D = self.discriminator_cls(is_critic=is_critic, n_channels=self.n_channels)
+        discriminator_kwargs = dict(is_critic=is_critic)
+        # Only some discriminators (e.g., the convolutional one) support multiple channels. Grayscale images work with
+        # all discriminators, while a multichannel request to a discriminator without channel support raises an error.
+        if self.n_channels != 1 or "n_channels" in self.discriminator_cls.__dataclass_fields__:
+            discriminator_kwargs["n_channels"] = self.n_channels
+        D = self.discriminator_cls(**discriminator_kwargs)
         epsilon = 1e-10
         if len(gan_method_split := self.gan_method.split("_")) > 1:
             gradient_penalty_coeff = float(gan_method_split[-1])
@@ -550,8 +562,8 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         D.apply = jax.jit(D.apply)
         v_qnode = jax.vmap(self.generator, in_axes=(0, None))
 
-        def cost_fn_discriminator(z, X, generator_weights, discriminator_weights, alpha=None):
-            G_sample = self.decoder(self.standardize_pennylane_output(v_qnode(z, generator_weights)))
+        def cost_fn_discriminator(z, X, generator_weights, discriminator_weights, alpha=None, rng_key=None):
+            G_sample = self.decoder(self.standardize_pennylane_output(v_qnode(z, generator_weights)), rng_key=rng_key)
             D_fake = D.apply(discriminator_weights, G_sample)
             D_real = D.apply(discriminator_weights, X)
             if not is_critic:  # log transform if Vanilla GAN, not for Wasserstein GAN
@@ -576,13 +588,19 @@ class ContinuousQGANModelHandler(BaseModelHandler):
             return D_loss
 
 
-        def cost_fn_generator(z, generator_weights, discriminator_weights):
-            G_sample = self.decoder(self.standardize_pennylane_output(v_qnode(z, generator_weights)))
+        def cost_fn_generator(z, generator_weights, discriminator_weights, rng_key=None):
+            G_sample = self.decoder(self.standardize_pennylane_output(v_qnode(z, generator_weights)), rng_key=rng_key)
             D_fake = D.apply(discriminator_weights, G_sample)
             if not is_critic:  # log transform if Vanilla GAN, not for Wasserstein GAN
                 D_fake = jnp.log(D_fake + epsilon)
             G_loss = -jnp.mean(D_fake)
             return G_loss
+
+        # Compile the loss and gradient of each training step as a whole. Otherwise, every operation of the decoder
+        # and the discriminator is dispatched (and checked for NaNs in debug mode) separately and the jitted generator
+        # QNode is differentiated anew in each step, which dominates the run time for few qubits.
+        value_and_grad_discriminator = jax.jit(jax.value_and_grad(cost_fn_discriminator, argnums=3))
+        value_and_grad_generator = jax.jit(jax.value_and_grad(cost_fn_generator, argnums=1))
 
         logged_metrics = defaultdict(list)
         it_list = []
@@ -611,6 +629,16 @@ class ContinuousQGANModelHandler(BaseModelHandler):
 
         optimizer_discriminator = optax.adam(initial_learning_rate_discriminator, b1=adam_b1, b2=adam_b2)
         optimizer_state_d = optimizer_discriminator.init(self.discriminator_weights)
+
+        def compiled_update_fn(optimizer):
+            """Compiled optimizer step returning the updated weights and optimizer state (see the cost functions)."""
+            def update_fn(grad, optimizer_state, weights):
+                updates, optimizer_state = optimizer.update(grad, optimizer_state)
+                return optax.apply_updates(weights, updates), optimizer_state
+            return jax.jit(update_fn)
+
+        update_generator = compiled_update_fn(optimizer_generator)
+        update_discriminator = compiled_update_fn(optimizer_discriminator)
 
         for it in progress:
             if self.save_artifacts and (it % 100 == 0 or it == n_epochs - 1):
@@ -645,28 +673,26 @@ class ContinuousQGANModelHandler(BaseModelHandler):
                 if self.batch_size != len(train_dataset):
                     self.random_key, subkey = jax.random.split(self.random_key)
 
-                cost_discriminator, grad = jax.value_and_grad(
-                    lambda w: cost_fn_discriminator(z, X, self.generator_weights, w, alpha=alpha)
-                )(self.discriminator_weights)
-
-                updates, optimizer_state_d = optimizer_discriminator.update(
-                    grad, optimizer_state_d
+                # Fresh key per step so simulated shot noise (if enabled) varies across training
+                # iterations instead of being frozen at a fixed default seed.
+                self.random_key, subkey_shots = jax.random.split(self.random_key)
+                cost_discriminator, grad = value_and_grad_discriminator(
+                    z, X, self.generator_weights, self.discriminator_weights, alpha, subkey_shots
                 )
+
                 D_grad_mag = np.linalg.norm(np.asarray(jax.tree_util.tree_leaves(jax.tree.map(jnp.linalg.norm, grad)))).item()
-                self.discriminator_weights = optax.apply_updates(
-                    self.discriminator_weights, updates
+                self.discriminator_weights, optimizer_state_d = update_discriminator(
+                    grad, optimizer_state_d, self.discriminator_weights
                 )
 
-            cost_generator, grad = jax.value_and_grad(
-                lambda w: cost_fn_generator(z, w, self.discriminator_weights)
-            )(self.generator_weights)
+            self.random_key, subkey_shots = jax.random.split(self.random_key)
+            cost_generator, grad = value_and_grad_generator(
+                z, self.generator_weights, self.discriminator_weights, subkey_shots
+            )
             G_grad_mag = np.linalg.norm(np.array(grad)).mean()
 
-            updates, optimizer_state_g = optimizer_generator.update(
-                grad, optimizer_state_g
-            )
-            self.generator_weights = optax.apply_updates(
-                self.generator_weights, updates
+            self.generator_weights, optimizer_state_g = update_generator(
+                grad, optimizer_state_g, self.generator_weights
             )
 
             # Update progress bar postfix
@@ -686,7 +712,8 @@ class ContinuousQGANModelHandler(BaseModelHandler):
             logged_metrics['grad_mag_discriminator'].append(D_grad_mag)
             it_list.append(it)
 
-            if it % 100 == 0 or it == n_epochs - 1:  # Store every 100 epochs and in the final epoch
+            # Store every 100 epochs and in the final epoch
+            if self.save_artifacts and (it % 100 == 0 or it == n_epochs - 1):
                 df_eval_summary = pd.DataFrame(
                     {"iteration": it_list} | {k: np.array(v).astype(float) for k, v in logged_metrics.items()}
                 )
@@ -758,7 +785,10 @@ class ContinuousQGANModelHandler(BaseModelHandler):
             noise = (noise, z_init)
 
         v_qnode = jax.vmap(lambda inpt: self.generator(inpt, self.generator_weights))
-        samples_transformed = self.decoder(measurement_outputs := self.standardize_pennylane_output(v_qnode(noise)))
+        self.random_key, subkey_shots = jax.random.split(self.random_key)
+        samples_transformed = self.decoder(
+            measurement_outputs := self.standardize_pennylane_output(v_qnode(noise)), rng_key=subkey_shots
+        )
         samples_transformed = np.asarray(samples_transformed)
 
         return_info = dict.fromkeys([k[k.find('_') + 1:] for k, v in kwargs.items() if k.startswith("return") and v])

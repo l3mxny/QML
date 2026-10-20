@@ -1,0 +1,27 @@
+# Python build and cache artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+
+# Virtual environments
+qugen_env/
+.venv/
+venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Persistent JAX compilation cache (set in continuous_qgan_model_handler.py)
+jit_compiled/
+
+# File locks created by run_scripts/run_experiments.py
+*.lock
+
+# Raw and preprocessed training data (see README: Training dataset preparation)
+apps/logistics/training_data/*.npy
+apps/logistics/training_data/*.gz
+apps/logistics/training_data/*.mat
