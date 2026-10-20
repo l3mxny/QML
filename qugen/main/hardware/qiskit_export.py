@@ -5,9 +5,10 @@ On hardware, the generator is only used for inference: every noise sample define
 as rotation angles), whose computational basis probabilities are estimated from measurement counts and then decoded
 into an image in exactly the same way as the simulated probabilities during training.
 
-Bit ordering: PennyLane orders computational basis states with wire 0 as the most significant bit. Qiskit count
-bitstrings list classical bit 0 last. The exported circuits measure qubit i into classical bit i, and
-counts_to_probs() converts the counts back into PennyLane's ordering.
+Bit ordering: PennyLane orders the probabilities by the wires of the measurement, the first one being the most
+significant bit. These are not necessarily sorted, e.g., the FRQI generators remap the color qubit to wire 0 but measure
+it last. Qiskit count bitstrings list classical bit 0 last. The exported circuits measure the k-th measurement wire into
+classical bit k, and counts_to_probs() converts the counts back into PennyLane's ordering.
 """
 
 import jax
@@ -81,15 +82,17 @@ def tape_to_qiskit(tape, n_qubits=None, measure=True):
     Convert a PennyLane tape with integer wires 0, ..., n_qubits - 1 into a qiskit.QuantumCircuit.
 
     Args:
-        tape (qml.tape.QuantumScript): The circuit to convert. Its measurements are ignored.
+        tape (qml.tape.QuantumScript): The circuit to convert. Only the wire order of its first measurement is used.
         n_qubits (int, optional): Number of qubits of the Qiskit circuit. Defaults to the number of tape wires.
-        measure (bool, optional): Whether to measure all qubits (qubit i into classical bit i). Defaults to True.
+        measure (bool, optional): Whether to measure all qubits, the k-th wire of the tape measurement into classical
+            bit k (qubit k if the tape has no measurement). Defaults to True.
 
     Returns:
         qiskit.QuantumCircuit: The equivalent Qiskit circuit.
     """
-    from qiskit import QuantumCircuit
+    from qiskit import ClassicalRegister, QuantumCircuit
 
+    measured_wires = tape.measurements[0].wires if len(tape.measurements) > 0 else None
     operations = [op for op in tape.operations if not isinstance(op, qml.Barrier)]
     [tape], _ = qml.transforms.decompose(tape.copy(operations=operations), gate_set=set(QISKIT_GATES))
 
@@ -103,7 +106,11 @@ def tape_to_qiskit(tape, n_qubits=None, measure=True):
         getattr(circuit, QISKIT_GATES[op.name])(*params, *qubits)
 
     if measure:
-        circuit.measure_all()
+        measured_qubits = list(range(n_qubits)) if measured_wires is None else [int(w) for w in measured_wires]
+        assert sorted(measured_qubits) == list(range(n_qubits)), \
+            f"Measurement wires {measured_wires} must cover all {n_qubits} qubits"
+        circuit.add_register(ClassicalRegister(n_qubits, name="meas"))  # same register name as measure_all()
+        circuit.measure(measured_qubits, list(range(n_qubits)))
     return circuit
 
 
@@ -115,8 +122,8 @@ def generator_circuits(model, noise):
 
 def counts_to_probs(counts, n_qubits, smoothing=0.):
     """
-    Convert Qiskit measurement counts into a probability vector in PennyLane ordering (wire 0 is the most significant
-    bit), i.e., the format of the comp_basis_probs measurement scheme.
+    Convert Qiskit measurement counts into a probability vector in PennyLane ordering (classical bit 0, i.e., the first
+    measurement wire, is the most significant bit), i.e., the format of the comp_basis_probs measurement scheme.
 
     Args:
         counts (dict[str, int]): Counts of measured bitstrings, where the last character is classical bit 0.

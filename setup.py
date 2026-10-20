@@ -7,6 +7,15 @@ import platform
 
 from setuptools import setup, find_packages
 
+# Optional dependencies to run trained generators on IBM Quantum hardware (qugen/main/hardware): pip install ".[ibm]"
+extras_require = {
+    'ibm': [
+        'qiskit>=1.3',
+        'qiskit-aer>=0.15',
+        'qiskit-ibm-runtime>=0.34',
+    ],
+}
+
 if platform.system() == 'Linux':
     setup(name='qugen',
           version='0.1',
@@ -33,7 +42,8 @@ if platform.system() == 'Linux':
               "torchmetrics[image]>=1.6.2",
               "cuda-selector==0.1.5",
               'opencv-python>=4.11',
-              'pytorch-fid>=0.3.0',])
+              'pytorch-fid>=0.3.0',],
+          extras_require=extras_require)
 elif platform.system() == 'Darwin':
     setup(name='qugen',
           version='0.1',
@@ -60,7 +70,8 @@ elif platform.system() == 'Darwin':
               "torchmetrics[image]>=1.6.2",
               "cuda-selector==0.1.5",
               'opencv-python>=4.11',
-              'pytorch-fid>=0.3.0',])
+              'pytorch-fid>=0.3.0',],
+          extras_require=extras_require)
 elif platform.system() == 'Windows':
     setup(name='qugen',
           version='0.1',
@@ -88,6 +99,7 @@ elif platform.system() == 'Windows':
               "cuda-selector==0.1.5",
               'opencv-python>=4.11',
               'pytorch-fid>=0.3.0',
-          ])
+          ],
+          extras_require=extras_require)
 else:
     raise OSError('Unknown Operating System: {} {}'.format(platform.os.name, platform.system()))

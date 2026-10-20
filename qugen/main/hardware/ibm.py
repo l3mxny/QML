@@ -50,7 +50,10 @@ def transpile(circuits, backend, optimization_level=3, seed_transpiler=0, initia
         pass_manager = generate_preset_pass_manager(optimization_level=optimization_level, backend=backend,
                                                     seed_transpiler=seed_transpiler)
         first = pass_manager.run(circuits[0])
-        initial_layout = first.layout.initial_index_layout(filter_ancillas=True)
+        if first.layout is None:  # no layout stage for backends without coupling map (e.g., 'aer')
+            initial_layout = list(range(circuits[0].num_qubits))
+        else:
+            initial_layout = first.layout.initial_index_layout(filter_ancillas=True)
 
     pass_manager = generate_preset_pass_manager(optimization_level=optimization_level, backend=backend,
                                                 seed_transpiler=seed_transpiler, initial_layout=list(initial_layout))

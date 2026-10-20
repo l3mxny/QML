@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import jax.numpy as jnp
+import numpy as np
 
 
 def amplitude_encoding(images, indexing=None):
@@ -75,7 +76,7 @@ def amplitude_decoding(states, shape=(32, 32), indexing=None, normalize=True):
         images[:, 1::2, :] = images[:, 1::2, ::-1]
     elif indexing == 'hierarchical':
         assert shape[0] == shape[1]
-        num_qubits = round(jnp.log2(shape[0]))
+        num_qubits = round(np.log2(shape[0]))  # numpy keeps static shapes concrete when traced by jax.jit
         images = jnp.reshape(states, (batch_size, shape[0] * shape[1]))
         index = hierarchical_index(num_qubits)
         images = images[:, index.reshape(-1)].reshape(batch_size, *shape)
@@ -173,7 +174,7 @@ def FRQI_decoding(states, shape=(32, 32), indexing='hierarchical', enc_type='tri
     """
 
     # size and batch size of the states
-    num_qubits = jnp.round(jnp.log2(shape[0] * shape[1])).astype(int)
+    num_qubits = np.round(np.log2(shape[0] * shape[1])).astype(int)  # numpy keeps static shapes concrete in jax.jit
 
     images = jnp.reshape(states.copy(), (-1, 2 ** (num_qubits + 1)))
     batch_size = images.shape[0]
@@ -281,7 +282,7 @@ def NEQR_decoding(states, q, shape=(32, 32), indexing=None):
     """
 
     # size and batch size of the states
-    num_qubits = int(jnp.log2(shape[0] * shape[1]))
+    num_qubits = int(np.log2(shape[0] * shape[1]))  # numpy keeps static shapes concrete when traced by jax.jit
     images = jnp.reshape(states.copy(), (-1, 2 ** (num_qubits + q)))
     batch_size = images.shape[0]
 
