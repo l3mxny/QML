@@ -7,6 +7,15 @@ import platform
 
 from setuptools import setup, find_packages
 
+# Optional dependencies to run trained generators on IBM Quantum hardware (qugen/main/hardware): pip install ".[ibm]"
+extras_require = {
+    'ibm': [
+        'qiskit>=1.3',
+        'qiskit-aer>=0.15',
+        'qiskit-ibm-runtime>=0.34',
+    ],
+}
+
 if platform.system() == 'Linux':
     setup(name='qugen',
           version='0.1',
@@ -17,8 +26,8 @@ if platform.system() == 'Linux':
               'cma>=3.2.2',
               'colorama>=0.4.5',
               'flax>=0.8.2',
-              'jax=0.6.0',
-              'jaxlib=0.6.0',
+              'jax==0.6.0',
+              'jaxlib==0.6.0',
               'matplotlib>=3.5.3',
               'numpy>=1.26.4',
               'optax>=0.2.2',
@@ -31,9 +40,10 @@ if platform.system() == 'Linux':
               'fire>=0.7',
               'scikit-learn>=1.6.1',
               "torchmetrics[image]>=1.6.2",
-              "cuda-selector=0.1.5",
+              "cuda-selector==0.1.5",
               'opencv-python>=4.11',
-              'pytorch-fid>=0.3.0',])
+              'pytorch-fid>=0.3.0',],
+          extras_require=extras_require)
 elif platform.system() == 'Darwin':
     setup(name='qugen',
           version='0.1',
@@ -60,7 +70,8 @@ elif platform.system() == 'Darwin':
               "torchmetrics[image]>=1.6.2",
               "cuda-selector==0.1.5",
               'opencv-python>=4.11',
-              'pytorch-fid>=0.3.0',])
+              'pytorch-fid>=0.3.0',],
+          extras_require=extras_require)
 elif platform.system() == 'Windows':
     setup(name='qugen',
           version='0.1',
@@ -71,8 +82,8 @@ elif platform.system() == 'Windows':
               'cma>=3.2.2',
               'colorama>=0.4.5',
               'flax>=0.8.2',
-              'jax=0.6.0',
-              'jaxlib=0.6.0',
+              'jax==0.6.0',
+              'jaxlib==0.6.0',
               'matplotlib>=3.5.3',
               'numpy>=1.26.4',
               'optax>=0.2.2',
@@ -85,9 +96,10 @@ elif platform.system() == 'Windows':
               'fire>=0.7',
               'scikit-learn>=1.6.1',
               "torchmetrics[image]>=1.6.2",
-              "cuda-selector=0.1.5",
+              "cuda-selector==0.1.5",
               'opencv-python>=4.11',
               'pytorch-fid>=0.3.0',
-          ])
+          ],
+          extras_require=extras_require)
 else:
     raise OSError('Unknown Operating System: {} {}'.format(platform.os.name, platform.system()))
