@@ -14,6 +14,11 @@ extras_require = {
         'qiskit-aer>=0.15',
         'qiskit-ibm-runtime>=0.34',
     ],
+    # Optional dependencies to run trained generators on IonQ hardware or its noisy simulator: pip install ".[ionq]"
+    'ionq': [
+        'qiskit>=1.3',
+        'qiskit-ionq>=1.0',
+    ],
 }
 
 if platform.system() == 'Linux':
