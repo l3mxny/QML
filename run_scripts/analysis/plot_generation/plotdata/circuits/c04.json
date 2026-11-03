@@ -1,0 +1,30 @@
+{
+ "id": "c04",
+ "title": "Amplitude, strongly entangling layers, depth 2, 4 qubits",
+ "used": "test_qiskit_export",
+ "generator": "layered_rot_strongly_ent",
+ "n_params": 184,
+ "n_qubits": 4,
+ "layout": null,
+ "n_two_qubit_gates": 8,
+ "n_gates": 40,
+ "depth": 16,
+ "two_qubit_depth": 8,
+ "gate_counts": {
+  "cx": 8,
+  "rx": 8,
+  "ry": 8,
+  "rz": 16
+ },
+ "torino": {
+  "n_two_qubit_gates": 17,
+  "n_gates": 96,
+  "depth": 58,
+  "two_qubit_depth": 17,
+  "gate_counts": {
+   "cz": 17,
+   "rz": 38,
+   "sx": 41
+  }
+ }
+}

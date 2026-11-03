@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Uncompiled",
+    "seconds": 141.89127588272095,
+    "first_nan": null
+  },
+  {
+    "name": "Compiled",
+    "seconds": 37.90952110290527,
+    "first_nan": null
+  }
+]

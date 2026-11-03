@@ -1,0 +1,25 @@
+{
+ "id": "c11",
+ "title": "Baseline K = 20 compiled for fake_torino (CZ, RZ, SX, X)",
+ "used": "fake_torino export run (4096 shots)",
+ "generator": "c07",
+ "n_params": null,
+ "n_qubits": 5,
+ "layout": [
+  98,
+  100,
+  99,
+  92,
+  80
+ ],
+ "n_two_qubit_gates": 378,
+ "n_gates": 2146,
+ "depth": 1168,
+ "two_qubit_depth": 330,
+ "gate_counts": {
+  "cz": 378,
+  "rz": 732,
+  "sx": 981,
+  "x": 55
+ }
+}

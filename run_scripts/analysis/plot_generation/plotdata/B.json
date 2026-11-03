@@ -1,0 +1,131 @@
+{
+  "K10": {
+    "model_name": "continuous_mnist_0_1_2_3_4_5_6_7_8_9_4x4_N_60000_area_minmax_qgan_a33dbb10",
+    "epoch": 10000,
+    "shots": 4096,
+    "logical": {
+      "n_two_qubit_gates": 192,
+      "n_gates": 581,
+      "depth": 355,
+      "two_qubit_depth": 178,
+      "gate_counts": {
+        "cry": 32,
+        "cx": 160,
+        "h": 5,
+        "rx": 64,
+        "ry": 320
+      }
+    },
+    "aer": {
+      "layout": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "seconds": 25.63317108154297,
+      "n_two_qubit_gates": 168,
+      "n_gates": 457,
+      "depth": 290,
+      "two_qubit_depth": 154,
+      "gate_counts": {
+        "cp": 2,
+        "cry": 36,
+        "cx": 122,
+        "h": 1,
+        "rx": 28,
+        "ry": 229,
+        "u2": 11,
+        "u3": 20,
+        "unitary": 8
+      }
+    },
+    "fake_torino": {
+      "layout": [
+        98,
+        100,
+        99,
+        92,
+        80
+      ],
+      "seconds": 87.0819959640503,
+      "n_two_qubit_gates": 378,
+      "n_gates": 2145,
+      "depth": 1177,
+      "two_qubit_depth": 330,
+      "gate_counts": {
+        "cz": 378,
+        "rz": 730,
+        "sx": 978,
+        "x": 59
+      }
+    }
+  },
+  "K20": {
+    "model_name": "continuous_mnist_0_1_2_3_4_5_6_7_8_9_4x4_N_60000_area_minmax_qgan_6538ebe1",
+    "epoch": 10000,
+    "shots": 4096,
+    "logical": {
+      "n_two_qubit_gates": 192,
+      "n_gates": 581,
+      "depth": 355,
+      "two_qubit_depth": 178,
+      "gate_counts": {
+        "cry": 32,
+        "cx": 160,
+        "h": 5,
+        "rx": 64,
+        "ry": 320
+      }
+    },
+    "aer": {
+      "layout": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "seconds": 9.98214316368103,
+      "n_two_qubit_gates": 168,
+      "n_gates": 457,
+      "depth": 290,
+      "two_qubit_depth": 154,
+      "gate_counts": {
+        "crx": 2,
+        "cry": 32,
+        "cx": 122,
+        "h": 1,
+        "rx": 28,
+        "rxx": 2,
+        "ry": 229,
+        "rzz": 2,
+        "u1": 1,
+        "u2": 12,
+        "u3": 18,
+        "unitary": 8
+      }
+    },
+    "fake_torino": {
+      "layout": [
+        98,
+        100,
+        99,
+        92,
+        80
+      ],
+      "seconds": 103.03763461112976,
+      "n_two_qubit_gates": 378,
+      "n_gates": 2146,
+      "depth": 1168,
+      "two_qubit_depth": 330,
+      "gate_counts": {
+        "cz": 378,
+        "rz": 732,
+        "sx": 981,
+        "x": 55
+      }
+    }
+  }
+}

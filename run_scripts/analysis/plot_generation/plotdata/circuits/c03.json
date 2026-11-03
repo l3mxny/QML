@@ -1,0 +1,30 @@
+{
+ "id": "c03",
+ "title": "Amplitude, SO(4) blocks, depth 2, 4 qubits",
+ "used": "test_qiskit_export",
+ "generator": "SO4_blocks_noise_angle_mirror",
+ "n_params": 192,
+ "n_qubits": 4,
+ "layout": null,
+ "n_two_qubit_gates": 12,
+ "n_gates": 48,
+ "depth": 27,
+ "two_qubit_depth": 12,
+ "gate_counts": {
+  "cx": 12,
+  "h": 4,
+  "rx": 8,
+  "ry": 24
+ },
+ "torino": {
+  "n_two_qubit_gates": 11,
+  "n_gates": 93,
+  "depth": 49,
+  "two_qubit_depth": 11,
+  "gate_counts": {
+   "cz": 11,
+   "rz": 39,
+   "sx": 43
+  }
+ }
+}
