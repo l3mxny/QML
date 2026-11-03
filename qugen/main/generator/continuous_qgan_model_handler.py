@@ -219,6 +219,7 @@ class ContinuousQGANModelHandler(BaseModelHandler):
                 "gan_method": gan_method,
                 "n_channels": self.n_channels,
                 "shots": self.shots,
+                "random_seed": random_seed,
             }
         )
         if save_artifacts:
