@@ -1,0 +1,4 @@
+# Written when the scripts run: short training runs (collect_tests.py D/E), the uncompiled handler copy (E), logs
+experiments/
+handler_eager.py
+*.log

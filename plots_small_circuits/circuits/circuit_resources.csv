@@ -1,0 +1,12 @@
+id,configuration,used_in,qubits,trainable_parameters,gates,two_qubit_gates,depth,two_qubit_depth,fake_torino_cz,fake_torino_depth,fake_torino_two_qubit_depth
+c01,"FRQI color rotation, next-neighbor blocks, depth (2,1), 5 qubits","test_qiskit_export (exact + 20k-shot Aer), training checks (exact, 256, 2048 shots), compiled-step check",5,232.0,81,28,42,21,57.0,170.0,48.0
+c02,"FRQI color rotation, SO(4) blocks, depth (2,1), 5 qubits",test_qiskit_export,5,200.0,57,20,26,13,41.0,128.0,35.0
+c03,"Amplitude, SO(4) blocks, depth 2, 4 qubits",test_qiskit_export,4,192.0,48,12,27,12,11.0,49.0,11.0
+c04,"Amplitude, strongly entangling layers, depth 2, 4 qubits",test_qiskit_export,4,184.0,40,8,16,8,17.0,58.0,17.0
+c05,"Amplitude, SO(4) blocks, depth 4, 4 qubits","training check (amplitude, exact)",4,384.0,92,24,53,24,21.0,100.0,21.0
+c06,"Baseline K = 10, depth (8,2), 5 qubits, trained weights (iteration 10,000)","4x4 baseline training, Aer and fake_torino export runs",5,1824.0,581,192,355,178,378.0,1177.0,330.0
+c07,"Baseline K = 20, depth (8,2), 5 qubits, trained weights (iteration 10,000)","4x4 baseline training, Aer and fake_torino export runs",5,3104.0,581,192,355,178,378.0,1168.0,330.0
+c08,Configuration c01 compiled for Aer,test_sampled_counts_match_generator_probs,5,,77,28,41,21,,,
+c09,Baseline K = 10 compiled for Aer,Aer export run (4096 shots),5,,457,168,290,154,,,
+c10,"Baseline K = 10 compiled for fake_torino (CZ, RZ, SX, X)",fake_torino export run (4096 shots),5,,2145,378,1177,330,,,
+c11,"Baseline K = 20 compiled for fake_torino (CZ, RZ, SX, X)",fake_torino export run (4096 shots),5,,2146,378,1168,330,,,

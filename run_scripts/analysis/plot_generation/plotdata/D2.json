@@ -1,0 +1,12 @@
+[
+  {
+    "name": "FRQI, 256 shots, after fix",
+    "seconds": 137.1135356426239,
+    "first_nan": null
+  },
+  {
+    "name": "FRQI, 2048 shots, after fix",
+    "seconds": 106.09150099754333,
+    "first_nan": null
+  }
+]

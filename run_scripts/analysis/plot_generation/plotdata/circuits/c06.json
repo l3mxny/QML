@@ -1,0 +1,32 @@
+{
+ "id": "c06",
+ "title": "Baseline K = 10, depth (8,2), 5 qubits, trained weights (iteration 10,000)",
+ "used": "4x4 baseline training, Aer and fake_torino export runs",
+ "generator": "color_rot_skip_SO4_blocks_noise_angle_next_neighbor_mirror",
+ "n_params": 1824,
+ "n_qubits": 5,
+ "layout": null,
+ "n_two_qubit_gates": 192,
+ "n_gates": 581,
+ "depth": 355,
+ "two_qubit_depth": 178,
+ "gate_counts": {
+  "cry": 32,
+  "cx": 160,
+  "h": 5,
+  "rx": 64,
+  "ry": 320
+ },
+ "torino": {
+  "n_two_qubit_gates": 378,
+  "n_gates": 2145,
+  "depth": 1177,
+  "two_qubit_depth": 330,
+  "gate_counts": {
+   "cz": 378,
+   "rz": 730,
+   "sx": 978,
+   "x": 59
+  }
+ }
+}

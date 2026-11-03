@@ -1,0 +1,32 @@
+{
+ "id": "c09",
+ "title": "Baseline K = 10 compiled for Aer",
+ "used": "Aer export run (4096 shots)",
+ "generator": "c06",
+ "n_params": null,
+ "n_qubits": 5,
+ "layout": [
+  0,
+  1,
+  2,
+  3,
+  4
+ ],
+ "n_two_qubit_gates": 168,
+ "n_gates": 457,
+ "depth": 290,
+ "two_qubit_depth": 154,
+ "gate_counts": {
+  "cp": 2,
+  "cry": 32,
+  "cx": 122,
+  "h": 1,
+  "rx": 28,
+  "ry": 229,
+  "ryy": 4,
+  "u1": 1,
+  "u2": 12,
+  "u3": 18,
+  "unitary": 8
+ }
+}
