@@ -36,7 +36,8 @@ from qugen.main.generator.noise_input import noise_sample_fn_factory
 
 
 jax.config.update("jax_enable_x64", False)
-jax.config.update("jax_compilation_cache_dir", "jit_compiled")
+# Do not enable JAX's on-disk compilation cache here: programs loaded from it made jax.random.multinomial return invalid
+# counts (NaN, negative), which turns training with shots into NaN from the second run in a folder on.
 
 
 class ContinuousQGANModelHandler(BaseModelHandler):
