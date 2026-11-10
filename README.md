@@ -39,13 +39,22 @@ The repository is organized as follows:
   Each line corresponds to a single experiment/model.
 - All figures and results presented in the paper are created in the Jupyter notebook ''plots_paper.ipynb''.
 - The main implementation of the QGANs, based on the underlying qugen library, is found in ''qugen/main''.
+- Export and execution of trained generators on IBM Quantum hardware is in ''qugen/main/hardware''.
+- Analysis scripts for the shot-count and small-circuit studies are in ''run_scripts/analysis'', and the digit
+  recognizability/coverage script is ''run_scripts/digit_coverage.py''.
+- Unit tests are in ''qugen/test''.
 
 # Installation
 
-1) Create a virtual environment, e.g. using ``conda create --name qugen_env python=3.12.9``. Python 3.9 or later is
-   supported.
-2) Activate the environment, e.g ``conda activate qugen_env`` or ``source activate qugen_env``.
-3) Run ``pip install .`` or ``pip install -e .`` to install it in editable mode.
+The pinned JAX version (0.6.0) requires Python 3.10 or later.
+
+1) Create and activate a virtual environment, either with conda:
+   ``conda create --name qugen_env python=3.12.9`` followed by ``conda activate qugen_env``,
+   or with the built-in venv module (macOS/Linux): ``python3 -m venv qugen_env`` followed by ``source qugen_env/bin/activate``.
+2) Upgrade pip. Older pip versions cannot find the pinned JAX release: ``python -m pip install --upgrade pip``
+3) From the repository root, run ``pip install .`` or ``pip install -e .`` to install it in editable mode.
+   To use the Jupyter notebooks, also run ``pip install jupyter``.
+4) *(optional)* For IBM Quantum hardware and Qiskit simulators, run ``pip install ".[ibm]"``.
 
 ### CUDA installation instructions
 
@@ -87,6 +96,22 @@ Note that the training datasets must be stored in ''apps/logistics/training_data
 below).
 (Multi-CPU/GPU training is supported and can be activated by the CLI flag ``n_processes``.)
 
+## Shot noise and random seeds
+
+By default (``shots=None``) the generator's output probabilities are exact. Setting ``shots`` (e.g. 128, 512 or 2048)
+samples a finite number of measurements from those probabilities, simulating a real quantum device. ``shots`` can be
+passed to ``train_image_qgan.py`` or set as a column in the experiments CSV. Probabilities are clipped away from zero
+before sampling so that shot-based runs do not produce NaNs.
+
+Randomness is controlled as follows:
+
+- ``random_seed`` (default 42) in ``ContinuousQGANModelHandler`` seeds the JAX random key used for latent noise,
+  gradient-penalty interpolation and shot sampling. It is not exposed as a command-line argument of
+  ``train_image_qgan.py``.
+- The key is split at every training step, so the latent noise and the shot noise change from one iteration to the next.
+  Reusing a fixed key froze the shot noise, so the model could learn one fixed noise pattern.
+- Loading a saved model resets its key to a fixed seed (2), so sampling from a loaded model is reproducible.
+
 ## Evaluation of trained QGAN models
 
 ### Fréchet Inception Distance (FID)
@@ -114,6 +139,20 @@ evaluate the MMD metrics (M=5000 in the paper) via ``n_samples``.
 The evaluation results are stored in the model folder indicated in the experiment configuration file and named ''
 evaluation_summary.csv''.
 
+### Digit recognizability and class coverage
+
+``run_scripts/digit_coverage.py`` fits a small classifier on labelled real images (preprocess them with
+``--save_labels=True``). It reports the classifier's held-out accuracy on real images at the chosen resolution, and the
+predicted digit histogram of generated images, which shows whether all ten digits are produced. Run it from
+``apps/logistics``:
+
+```
+python ../../run_scripts/digit_coverage.py --data_set_name=mnist_0_1_2_3_4_5_6_7_8_9_4x4_N_60000_area
+python ../../run_scripts/digit_coverage.py --data_set_name=mnist_0_1_2_3_4_5_6_7_8_9_4x4_N_60000_area --model_name=[model_folder_name] --n_samples=1000
+```
+
+Generated images can also be read from a saved ``.npy`` file with ``--samples_path``.
+
 ## Plots
 
 The Jupyter notebook ''plots_paper.ipynb'' creates all plots and figures presented in the paper.
@@ -139,6 +178,12 @@ cd apps/logistics/training_data
 python mnist_processing.py --img_size=32 --digit="[0,1,2]"
 ```
 
+Two further options of ``mnist_processing.py``:
+
+- ``--interpolation`` selects the OpenCV downscaling method (``lanczos``, the default used for the paper's experiments,
+  or ``area``, ``linear``, ``cubic`` and ``nearest``). OpenCV recommends ``area`` for strong downscaling, e.g. 28x28 to 4x4.
+- ``--save_labels=True`` also saves the digit labels, which ``digit_coverage.py`` needs.
+
 The following raw datasets are required to be downloaded manually and placed in the ''apps/logistics/training_data''
 folder before running the respective preprocessing scripts:
 
@@ -151,6 +196,37 @@ folder before running the respective preprocessing scripts:
 - SVHN: Download raw data (''extra_32x32.mat'') [here](http://ufldl.stanford.edu/housenumbers/) and save the file as ''
   svhn_extra_32x32.mat''.
 
+# Running generators on IBM Quantum hardware
+
+The modules in ''qugen/main/hardware'' run trained generators on IBM Quantum backends:
+
+- ''qiskit_export.py'' converts a trained generator into Qiskit circuits, one per noise sample. The measured counts are
+  decoded in the same way as the simulated probabilities during training. ''counts_to_probs()'' converts between the bit
+  ordering of PennyLane and Qiskit.
+- ''ibm.py'' transpiles and runs the circuits through Qiskit Runtime. Backend names are ''aer'' (ideal simulation with
+  shots), ''fake_<name>'' (noisy simulation of a device snapshot, e.g. ''fake_torino'', which needs no account),
+  ''least_busy'' (the least busy device of your account) or a device name such as ''ibm_torino''.
+
+Real devices require an IBM Quantum account saved beforehand with ''QiskitRuntimeService.save_account(...)''. The
+repository does not store credentials. Install the dependencies with ''pip install ".[ibm]"''.
+
+# Analysis scripts
+
+''run_scripts/analysis'' contains the scripts for the shot-count and small-circuit studies:
+
+- *Phase 1* (''small_circuit_sweep.py''): trains a grid of small circuit configurations for a short, fixed budget and logs
+  KL divergence and parameter counts. It is designed for Colab or Kaggle rather than local machines.
+- *Phase 2* (''shot_count_sweep.py''): sweeps the shot count, both on an already trained generator and during training
+  from scratch. Example: ''python run_scripts/analysis/shot_count_sweep.py --n_qubits=7 --circuit_depth=2''
+- *Phase 4* (''synthesize_report.py''): joins the outputs of the earlier phases into one ranked table and a short summary.
+- ''circuit_resource_report.py'' reports resource specifications of circuit configurations, ''toy_data.py'' generates
+  the bars-and-stripes data used by the sweeps, and ''shot_noise_fix_demo.ipynb'' demonstrates the per-step random key.
+
+# Tests
+
+Run the unit tests from the repository root with ''pytest qugen/test''. The tests in ''qugen/test/hardware'' require the
+optional IBM dependencies (''pip install ".[ibm]"'').
+
 # Miscellaneous
 
 #### Config files
@@ -158,18 +234,18 @@ folder before running the respective preprocessing scripts:
 A convenient way to specify multiple trainings is offered by creating config files in the CSV format and should be
 stored in ''apps/logistics/experiments''.
 Each row specifies a single experiment setting, while each column is linked to a ``main`` function argument in ''
-apps/logistics/train_image_qgan.py'' (default values are used if not specified) and therefore has to match these
-argument names. Alternatively, when using the CLI of ''apps/logistics/run_experiments.py'', provide this config file
+run_scripts/train_image_qgan.py'' (default values are used if not specified) and therefore has to match these
+argument names. Alternatively, when using the CLI of ''run_scripts/run_experiments.py'', provide this config file
 path via the parameter ``--experiments_csv_path={}``
 However, the following exceptions exist:
 
-- *result_path*: This column/value is automatically organized by ''apps/logistics/run_experiments.py'' and can be in
+- *result_path*: This column/value is automatically organized by ''run_scripts/run_experiments.py'' and can be in
   five different states
 
   | Value                      | Description                                                                                                                                                                                                                                                                            |
   |----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-  | *(Empty)*                  | This experiment has not been run. In order to run this experiment the next time when the config file is passed to ''apps/logistics/run_experiments.py'', this cell should left empty. (note that in CSV this is realized by directly providing the next comma without any whitespace.) |
-  | *...*                      | This experiment is currently queued for training by a ''apps/logistics/run_experiments.py'' run.                                                                                                                                                                                       |
+  | *(Empty)*                  | This experiment has not been run. In order to run this experiment the next time when the config file is passed to ''run_scripts/run_experiments.py'', this cell should left empty. (note that in CSV this is realized by directly providing the next comma without any whitespace.) |
+  | *...*                      | This experiment is currently queued for training by a ''run_scripts/run_experiments.py'' run.                                                                                                                                                                                       |
   | *...(p{id})*               | This experiment is currently trained and executed by the process with ID *id*.                                                                                                                                                                                                         |
   | *...ERR:{msg}*             | The training of this experiment raised an error with message *msg* and is ended.                                                                                                                                                                                                       |
   | *experiments/{model_name}* | The experiment has been completed successfully and the results can be found under the specified path.                                                                                                                                                                                  |
@@ -194,10 +270,10 @@ is provided here:
 #### Parallel execution of experiments in config file
 
 For parallel execution of *N* experiments provided in a config file, increase the argument ``n_processes`` to *N* in the
-``main`` function in ''apps/logistics/run_experiments.py'' (or pass the parameter ``--n_processes=N`` via the CLI of ''
-apps/logistics/run_experiments.py'').
+``main`` function in ''run_scripts/run_experiments.py'' (or pass the parameter ``--n_processes=N`` via the CLI of ''
+run_scripts/run_experiments.py'').
 When run in GPU mode, this will reserve a single GPU per experiment. The least busy GPUs (by memory utilization) are
-automatically determined and the top-level list variable ``EXCLUDE_GPUS`` in ''apps/logistics/run_experiments.py'' can
+automatically determined and the top-level list variable ``EXCLUDE_GPUS`` in ''run_scripts/run_experiments.py'' can
 be used to exclude certain GPUs by their ID from the training. 
 
 #### Patch-QGAN benchmarking

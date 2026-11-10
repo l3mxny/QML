@@ -17,7 +17,7 @@ venv/
 .DS_Store
 Thumbs.db
 
-# Persistent JAX compilation cache (set in continuous_qgan_model_handler.py)
+# Persistent JAX compilation cache of earlier runs (no longer written, see continuous_qgan_model_handler.py)
 jit_compiled/
 
 # File locks created by run_scripts/run_experiments.py
