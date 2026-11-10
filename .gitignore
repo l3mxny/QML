@@ -11,6 +11,8 @@ qugen_env/
 .venv/
 venv/
 
+.env
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -25,4 +27,5 @@ jit_compiled/
 apps/logistics/training_data/*.npy
 apps/logistics/training_data/*.gz
 apps/logistics/training_data/*.mat
-.env
+
+
