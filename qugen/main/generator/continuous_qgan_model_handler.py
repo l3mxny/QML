@@ -220,6 +220,7 @@ class ContinuousQGANModelHandler(BaseModelHandler):
                 "gan_method": gan_method,
                 "n_channels": self.n_channels,
                 "shots": self.shots,
+                "random_seed": random_seed,
             }
         )
         if save_artifacts:
@@ -490,7 +491,8 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         adam_b1: float = 0.9,
         adam_b2: float = 0.999,
         batch_size=None,
-        discriminator_training_steps=1
+        discriminator_training_steps=1,
+        slope_log_every: int = 100,
     ) -> BaseModelHandler:
         """Train the continuous QGAN.
 
@@ -499,6 +501,10 @@ class ContinuousQGANModelHandler(BaseModelHandler):
             n_epochs (int): Technically, we are not passing the number of passes through the training data, but the number of iterations of the training loop.
             initial_learning_rate_generator (float, optional): Learning rate for the quantum generator.
             initial_learning_rate_discriminator (float, optional): Learning rate for the classical discriminator.
+            slope_log_every (int, optional): How often (in generator updates) to record the mean
+                ||grad_x D|| on interpolated real/fake images, i.e. the quantity the WGAN-GP penalty
+                constrains towards 1. Costs one extra generator forward pass each time it is recorded;
+                set to 0 to disable. Only applies to WGAN-GP training.
             adam_b1 (float, optional): Adam optimizer parameter. (exponential decay rate to track the first moment of past gradients.) Defaults to 0.9.
             adam_b2 (float, optional): Adam optimizer parameter. (exponential decay rate to track the second moment of past gradients.) Defaults to 0.999.
             batch_size (int, optional): Batch size. Defaults to None, and the whole training data is used in each iteration.
@@ -602,6 +608,22 @@ class ContinuousQGANModelHandler(BaseModelHandler):
         # QNode is differentiated anew in each step, which dominates the run time for few qubits.
         value_and_grad_discriminator = jax.jit(jax.value_and_grad(cost_fn_discriminator, argnums=3))
         value_and_grad_generator = jax.jit(jax.value_and_grad(cost_fn_generator, argnums=1))
+
+        # Diagnostic only: the WGAN-GP penalty drives ||grad_x D|| on interpolated real/fake images
+        # towards 1, but that value is consumed inside cost_fn_discriminator and never surfaced.
+        # Recomputing it every `slope_log_every` iterations makes the constraint checkable from
+        # evaluation_summary.csv. It does not feed back into training.
+        if gradient_penalty_coeff is not None:
+            def mean_interpolate_grad_norm(z, X, generator_weights, discriminator_weights, alpha, rng_key=None):
+                G_sample = self.decoder(
+                    self.standardize_pennylane_output(v_qnode(z, generator_weights)), rng_key=rng_key
+                )
+                interpolates = X + alpha.reshape(-1, 1) * (G_sample - X)
+                return jnp.mean(jnp.linalg.norm(D_grad_input(discriminator_weights, interpolates), axis=1))
+
+            mean_interpolate_grad_norm = jax.jit(mean_interpolate_grad_norm)
+        else:
+            mean_interpolate_grad_norm = None
 
         logged_metrics = defaultdict(list)
         it_list = []
@@ -711,6 +733,19 @@ class ContinuousQGANModelHandler(BaseModelHandler):
             logged_metrics['loss_discriminator'].append(cost_discriminator)
             logged_metrics['grad_mag_generator'].append(G_grad_mag)
             logged_metrics['grad_mag_discriminator'].append(D_grad_mag)
+
+            # Diagnostic: mean ||grad_x D|| on interpolates (target 1.0 under the WGAN-GP penalty).
+            # NaN on the iterations where it is not recomputed, so the column stays aligned.
+            if mean_interpolate_grad_norm is not None:
+                if slope_log_every and it % slope_log_every == 0:
+                    grad_norm_interpolates = float(
+                        mean_interpolate_grad_norm(
+                            z, X, self.generator_weights, self.discriminator_weights, alpha, subkey_shots
+                        )
+                    )
+                else:
+                    grad_norm_interpolates = float('nan')
+                logged_metrics['grad_norm_interpolates'].append(grad_norm_interpolates)
             it_list.append(it)
 
             # Store every 100 epochs and in the final epoch

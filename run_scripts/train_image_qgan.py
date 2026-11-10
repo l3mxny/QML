@@ -48,6 +48,7 @@ def main(data_set_name,
          adam_b2=0.999,
          batch_size=20,
          discriminator_training_steps=1,
+         slope_log_every=100,
          gan_method="GAN",
          warm_start=False,
          n_channels=1,
@@ -126,7 +127,8 @@ def main(data_set_name,
         adam_b1=adam_b1,
         adam_b2=adam_b2,
         batch_size=batch_size,
-        discriminator_training_steps=discriminator_training_steps
+        discriminator_training_steps=discriminator_training_steps,
+        slope_log_every=slope_log_every
     )
 
     if PLOT_SAMPLES:

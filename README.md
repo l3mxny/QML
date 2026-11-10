@@ -12,6 +12,24 @@ To see results:
 3. jupyter notebook
 
 
+## Trained baseline runs (4x4, ten digits)
+
+Two trained runs (iterations 0 to 5000) are on Google Drive: https://drive.google.com/file/d/13EIxtujDtYBYAevPw0Xr5i-sNx-rhiSk/view?usp=sharing
+
+Unzip `qgan_4x4_runs.zip` into `apps/logistics/experiments/`. Do not commit it; `experiments/` stays local.
+
+- Each run folder has model weights (`parameters_training_iteration=N.pickle`), generated samples, `evaluation_summary.csv` and `meta.yaml`.
+
+### What you can do
+
+- **Look at images:** load `samples_iteration=5000.npy`, reshape to `(20, 4, 4)`, and plot with matplotlib.
+- **Loss and gradient plots:** run Idan's `run_scripts/analysis/discriminator_diagnostics.py`, which reads `evaluation_summary.csv`.
+- **Re-run metrics (MMD, FID, digit coverage):** `run_scripts/run_evaluations.py` and `run_scripts/digit_coverage.py`. These also need the preprocessed MNIST `.npy` files in `apps/logistics/training_data/`; see "Training dataset preparation" above for how to generate them.
+- **IonQ comparison:** `run_scripts/sample_on_ionq.py`, run from `apps/logistics`. It needs your own `IONQ_API_KEY` in a `.env` file (already ignored by git).
+
+
+## Default Paper Information
+
 
 
 [![arXiv](https://img.shields.io/badge/arXiv-2603.00233-fb595a.svg)](https://arxiv.org/abs/2603.00233)
