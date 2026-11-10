@@ -27,6 +27,24 @@ Unzip `qgan_4x4_runs.zip` into `apps/logistics/experiments/`. Do not commit it; 
 - **Re-run metrics (MMD, FID, digit coverage):** `run_scripts/run_evaluations.py` and `run_scripts/digit_coverage.py`. These also need the preprocessed MNIST `.npy` files in `apps/logistics/training_data/`; see "Training dataset preparation" above for how to generate them.
 - **IonQ comparison:** `run_scripts/sample_on_ionq.py`, run from `apps/logistics`. It needs your own `IONQ_API_KEY` in a `.env` file (already ignored by git).
 
+## Trained two-digit runs (4x4, digits 0 and 1, depth sweep)
+
+Eight trained runs for the scaled-down (two-digit) task are on Google Drive: https://drive.google.com/file/d/1YSizZca6Aq7mMmszklrEoaD6y9IEusCz/view?usp=sharing
+
+Unzip it into `apps/logistics/experiments/`. Do not commit it; `experiments/` stays local. Each run folder has the same layout as the ten-digit runs above.
+
+- **Data:** MNIST digits 0 and 1 only, 4x4 images, N = 12,665 (folder names start with `continuous_mnist_0_1_4x4_N_12665_`).
+- **Runs:** four circuit depths, (2,1), (2,2), (4,1) and (8,2), with seeds 42 and 43, trained for 10,000 iterations.
+- **Config:** `experiments_configs/runs_01_depth_sweep.csv` lists every run folder with its depth and seed.
+- **Results:** `plots_01_depth_sweep/summary.csv` and the plots next to it, made by `run_scripts/analysis/plot_generation_01/`.
+
+### What you can do
+
+- **Compare depths:** rerun the plot scripts in `run_scripts/analysis/plot_generation_01/` on the unzipped folders to regenerate the quality-versus-hardware-cost figures.
+- **Compare against the ten-digit baseline:** use the runs above as the baseline for the two-digit results.
+- **IonQ feasibility check:** `run_scripts/sample_on_ionq.py` can load these runs the same way (run from `apps/logistics`; needs your own `IONQ_API_KEY`).
+
+
 
 ## Default Paper Information
 
