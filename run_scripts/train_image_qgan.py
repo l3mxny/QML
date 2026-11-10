@@ -52,6 +52,7 @@ def main(data_set_name,
          warm_start=False,
          n_channels=1,
          shots=None,
+         random_seed=42,
          **kwargs):
 
     if len(kwargs) > 0:
@@ -61,6 +62,7 @@ def main(data_set_name,
     #jax.config.update("jax_disable_jit", DEBUG)
     jax.config.update("jax_debug_nans", True)
     np.seterr(invalid="raise")
+    np.random.seed(random_seed)  # training data order
 
     data, data_set_name = _load_data(data_set_name, data_set_kwargs)
     n_pixels = data.shape[1] // n_channels
@@ -108,6 +110,7 @@ def main(data_set_name,
         gan_method=gan_method,
         n_channels=n_channels,
         shots=shots,
+        random_seed=random_seed,
     )
 
     # Warm start the learning
