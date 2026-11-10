@@ -1,8 +1,8 @@
 # Small-circuit plot generation
 
 Scripts behind the figures in `plots_small_circuits/` (4x4 `_area` MNIST, FRQI). Data scripts write `plotdata/`; `make_plots.py`
-renders from `plotdata/` only, so figures can be re-rendered without re-running anything expensive. `plotdata/` holds the data of
-the current figures.
+renders from `plotdata/` only, so figures can be re-rendered without re-running anything expensive. `plotdata/` is not committed: rebuild it
+with steps 1-4, which need the training runs in `apps/logistics/experiments/` on your machine.
 
 Run with the `qugen` environment from any directory. Paths are resolved relative to the repo.
 
