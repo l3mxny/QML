@@ -1,0 +1,9 @@
+run,dataset,depth,modes,iterations,LD_start,LD_end,D_grad_end
+continuous_mnist_0_1_4x4_N_12665_area_minmax_qgan_020d75eb,mnist,"[2, 1]",2,9999,-0.78,-0.242,0.552
+continuous_mnist_0_1_4x4_N_12665_area_minmax_qgan_50c39fb5,mnist,"[2, 1]",2,9999,-0.934,-0.186,0.526
+continuous_mnist_0_1_4x4_N_12665_area_minmax_qgan_5e4c9d77,mnist,"[2, 2]",2,9999,-0.769,-0.126,0.588
+continuous_mnist_0_1_4x4_N_12665_area_minmax_qgan_ef177f1a,mnist,"[2, 2]",2,9999,-0.807,-0.1,0.553
+continuous_mnist_0_1_4x4_N_12665_area_minmax_qgan_15287afa,mnist,"[4, 1]",2,9999,-0.562,-0.11,0.609
+continuous_mnist_0_1_4x4_N_12665_area_minmax_qgan_ffc91d44,mnist,"[4, 1]",2,9999,-0.599,-0.109,0.649
+continuous_mnist_0_1_4x4_N_12665_area_minmax_qgan_2335ab44,mnist,"[8, 2]",2,9999,-0.298,-0.056,0.921
+continuous_mnist_0_1_4x4_N_12665_area_minmax_qgan_b6c11749,mnist,"[8, 2]",2,9999,-0.262,-0.057,1.058
